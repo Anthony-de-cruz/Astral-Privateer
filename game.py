@@ -9,15 +9,17 @@ class GameObject(pygame.sprite.Sprite):
 
     """Base game object that all objects will inherit from"""
 
-    def __init__(self, x: int, y:int):
-        super.__init__()
+    def __init__(self, x_pos: int, y_pos:int, 
+                width:int, height:int, *groups:tuple):
+        super().__init__(*groups)
 
-        self.x = x
-        self.y = y
-    
-    def draw(self, window: pygame.display) -> None:
+        self.x_pos = x_pos
+        self.y_pos = y_pos
 
-        """Method to specify what is drawn to the main window"""
+        self.width = width
+        self.height = height
+        self.image = pygame.Surface((self.width, self.height))
+        self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
 
 
 class Game():
@@ -39,8 +41,6 @@ class Game():
         self.window_width = window_width
         self.window_height = window_height
 
-        self.objects: list[GameObject] = []
-        
         self.setup_window()
 
         self.running = True
@@ -53,19 +53,6 @@ class Game():
             (self.window_width, self.window_height))
         pygame.display.set_caption((self.window_name))
         os.environ["SDL_VIDEO_CENTERED"] = "1"
-
-    def add_object(self, game_object: GameObject) -> None:
-
-        """Method to add a game object into the game object list"""
-
-        self.objects.append(game_object)
-    
-    def draw_objects(self) -> None:
-
-        """Method to draw all objects"""
-
-        for obj in self.objects:
-            obj.draw(self.window, self.COLOUR_PALETTE)
 
     def handle_events(self) -> None:
 
@@ -86,6 +73,6 @@ class Game():
             self.clock.tick(self.frame_rate)
             self.handle_events()
 
-            self.draw_objects()
+            self.draw_object_groups()
             pygame.display.flip()
 
