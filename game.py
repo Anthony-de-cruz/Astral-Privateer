@@ -19,7 +19,8 @@ class GameObject(pygame.sprite.Sprite):
         self.width = width
         self.height = height
         self.image = pygame.Surface((self.width, self.height))
-        self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
+        self.rect = pygame.Rect(self.x_pos, self.y_pos,
+                                self.width, self.height)
 
 
 class Game():
