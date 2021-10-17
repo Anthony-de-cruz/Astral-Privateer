@@ -1,8 +1,10 @@
 import random
 import sys
+import os
 from typing import NoReturn
 
 from game import GameObject, Game
+from load_map_file import load_map_file
 import pygame
 
 
@@ -16,8 +18,6 @@ class TestObject(GameObject):
 
         self.image.fill((50,50,150))
         #self.image = pygame.transform.scale(self.image, ())
-
-
 
 class Map(pygame.sprite.Sprite):
 
@@ -41,24 +41,34 @@ class Map(pygame.sprite.Sprite):
         self.width = self.x_tiles * tile_width
         self.height = self.y_tiles * tile_height
 
-        self.image = pygame.Surface((self.width, self.height))
-        self.rect = pygame.Rect(self.x_pos, self.y_pos,
-                                self.width, self.height)
+        self.map_data = load_map_file(os.path.join("levels", "level_0.json"))
+        print(self.map_data)
 
-        # Generate grid data strucutre, to be read from a json in future
-        self.grid = {}
-        for x in range(x_tiles):
-            for y in range(y_tiles):
-                # [TILE, Building object]
-                self.grid[f"{x},{y}"] = ["Buildable",
-                                        None]
+        self.image, self.rect = self.render_map_image()
+    
+    # Currently requires the dimentions of the map to be hard coded,
+    # needs a way to read the dimentions beforehand.
+    def render_map_image(self) -> pygame.Surface and pygame.Rect:
+
+        image = pygame.Surface((self.width, self.height))
+        rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
+
+        for x in range(self.x_tiles):
+            for y in range(self.y_tiles):
+ 
                 tile_image = pygame.Surface((self.tile_width, self.tile_height))
-                tile_image.fill((random.randint(50, 255),50,50))
 
-                self.image.blit(tile_image,
-                                (x * tile_width, y * tile_height, tile_width, tile_height))
 
-        print(self.grid)
+                tile_image.fill(self.TILE_SET[self.map_data[f"{x},{y}"][0]][0])
+
+                image.blit(tile_image,
+                            (x * self.tile_width, y * self.tile_height,
+                            self.tile_width, self.tile_height))
+
+        return image, rect
+            
+
+
 
 
 class AstralPrivateer(Game):
@@ -81,7 +91,7 @@ class AstralPrivateer(Game):
             frame_rate)
         
         self.TILE_SET = TILE_SET
-        self.cam_speed = 5
+        self.cam_speed = 10
         
         self.cam_pan_group = pygame.sprite.Group()
 
@@ -90,7 +100,7 @@ class AstralPrivateer(Game):
         #                                self.test_object_group, self.cam_pan_group)
 
         self.map_group = pygame.sprite.Group()
-        self.map = Map(0, 0, 20, 20, 50, 50, TILE_SET, self.map_group, self.cam_pan_group)
+        self.map = Map(0, 0, 24, 24, 50, 50, TILE_SET, self.map_group, self.cam_pan_group)
 
 
     def draw_object_groups(self) -> None:
@@ -142,10 +152,13 @@ def main() -> None:
         "White": (255, 255, 255)
     }
 
-    #(can be built over?)
+    #(Tile image path, Can be built over?)
+    #"Boundry": (os.path.join("assets", "tile_set", "boundry.png"), False),
+
+    #(colour, Can be built over?)
     TILE_SET = {
-        "Boundry": (False),
-        "Buildable": (True)
+        "Boundry": ((40, 40, 40), False),
+        "Buildable": ((80, 80, 80), True)
     }
 
     pygame.init()
