@@ -1,4 +1,5 @@
 import random
+import sys
 from typing import NoReturn
 
 from game import GameObject, Game
@@ -13,7 +14,7 @@ class TestObject(GameObject):
                 width:int, height:int, *groups:tuple):
         super().__init__(x_pos, y_pos, width, height, *groups)
 
-        self.image.fill((50,50,50))
+        self.image.fill((50,50,150))
         #self.image = pygame.transform.scale(self.image, ())
 
 
@@ -44,6 +45,7 @@ class Map(pygame.sprite.Sprite):
         self.rect = pygame.Rect(self.x_pos, self.y_pos,
                                 self.width, self.height)
 
+        # Generate grid data strucutre, to be read from a json in future
         self.grid = {}
         for x in range(x_tiles):
             for y in range(y_tiles):
@@ -53,8 +55,8 @@ class Map(pygame.sprite.Sprite):
                 tile_image = pygame.Surface((self.tile_width, self.tile_height))
                 tile_image.fill((random.randint(50, 255),50,50))
 
-
-                self.image.blit(tile_image, (x * tile_width, y * tile_height, tile_width, tile_height))
+                self.image.blit(tile_image,
+                                (x * tile_width, y * tile_height, tile_width, tile_height))
 
         print(self.grid)
 
@@ -79,14 +81,16 @@ class AstralPrivateer(Game):
             frame_rate)
         
         self.TILE_SET = TILE_SET
-
+        self.cam_speed = 5
         
+        self.cam_pan_group = pygame.sprite.Group()
+
         #self.test_object_group = pygame.sprite.Group()
-        #self.test_object = TestObject(50, 50, 100, 100,
-        #                                self.test_object_group)
+        #self.test_object = TestObject(50, 69, 100, 100,
+        #                                self.test_object_group, self.cam_pan_group)
 
         self.map_group = pygame.sprite.Group()
-        self.map = Map(0, 0, 20, 20, 50, 50, TILE_SET, self.map_group)
+        self.map = Map(0, 0, 20, 20, 50, 50, TILE_SET, self.map_group, self.cam_pan_group)
 
 
     def draw_object_groups(self) -> None:
@@ -96,9 +100,7 @@ class AstralPrivateer(Game):
         self.window.fill(self.COLOUR_PALETTE["Black"])
 
         #self.test_object_group.draw(self.window)
-
         self.map_group.draw(self.window)
-
 
 
     def update_object_groups(self) -> None:
@@ -106,6 +108,16 @@ class AstralPrivateer(Game):
         """Method to update all object groups"""
 
 
+
+    def handle_inputs(self) -> None:
+
+        """Method to handle player input"""
+
+        keys = pygame.key.get_pressed()
+
+        for sprite in self.cam_pan_group:
+            sprite.rect.x += (keys[pygame.K_a] - keys[pygame.K_d]) * self.cam_speed
+            sprite.rect.y += (keys[pygame.K_w] - keys[pygame.K_s]) * self.cam_speed
 
     def main_loop(self) -> None:
 
@@ -115,6 +127,7 @@ class AstralPrivateer(Game):
             
             self.clock.tick(self.frame_rate)
             self.handle_events()
+            self.handle_inputs()
 
             self.update_object_groups()
 
