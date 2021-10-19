@@ -4,13 +4,13 @@ import os
 def generate_map(x_tiles: int, y_tiles: int) -> dict:
 
     grid = {}
-    for x in range(x_tiles):
-        for y in range(y_tiles):
+    for y in range(y_tiles):
+        for x in range(x_tiles):
 
             if y > 5:
                 grid[f"{x},{y}"] = ["Buildable", None]
             else:
-                grid[f"{x},{y}"] = ["Boundry", None]
+                grid[f"{x},{y}"] = ["Boundary", None]
     return grid
 
 def main() -> None:

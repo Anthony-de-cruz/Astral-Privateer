@@ -5,6 +5,7 @@ from typing import NoReturn
 
 from game import GameObject, Game
 from load_map_file import load_map_file
+from sprite_sheet import SpriteSheet
 import pygame
 
 
@@ -18,6 +19,14 @@ class TestObject(GameObject):
 
         self.image.fill((50,50,150))
         #self.image = pygame.transform.scale(self.image, ())
+
+class TileSetSheet(SpriteSheet):
+
+    def __init__(self, sheet):
+        super().__init__(sheet)
+
+        self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
+        self.buildable_sprite = self.get_sprite(0, 0, 50, 50, 1)
 
 class Map(pygame.sprite.Sprite):
 
@@ -53,22 +62,19 @@ class Map(pygame.sprite.Sprite):
         image = pygame.Surface((self.width, self.height))
         rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
 
-        for x in range(self.x_tiles):
-            for y in range(self.y_tiles):
- 
+        for y in range(self.y_tiles):
+            for x in range(self.x_tiles):
+                
+                # Create a new image for the tile and blit the texture onto it
                 tile_image = pygame.Surface((self.tile_width, self.tile_height))
+                tile_image.blit(self.TILE_SET[self.map_data[f"{x},{y}"][0]][0], (0,0))
 
-
-                tile_image.fill(self.TILE_SET[self.map_data[f"{x},{y}"][0]][0])
-
+                # Blit this new image onto the main map surface      
                 image.blit(tile_image,
                             (x * self.tile_width, y * self.tile_height,
                             self.tile_width, self.tile_height))
 
-        return image, rect
-            
-
-
+        return image, rect 
 
 
 class AstralPrivateer(Game):
@@ -81,7 +87,6 @@ class AstralPrivateer(Game):
         window_height: int,
         COLOUR_PALETTE: dict,
         frame_rate: int,
-        TILE_SET: dict
         ):
         super().__init__(
             window_name,
@@ -90,9 +95,19 @@ class AstralPrivateer(Game):
             COLOUR_PALETTE,
             frame_rate)
         
-        self.TILE_SET = TILE_SET
+        tile_set_sheet = TileSetSheet(pygame.image.load(
+                                    os.path.join("assets",
+                                                "tile_set",
+                                                "tile_set_0.png")
+                                                        )
+                                    )
+        # (Sprite, Able to build over?)
+        self.TILE_SET = {
+                        "Boundary": (tile_set_sheet.boundary_sprite, False),
+                        "Buildable": (tile_set_sheet.buildable_sprite, True)
+                        }
+
         self.cam_speed = 10
-        
         self.cam_pan_group = pygame.sprite.Group()
 
         #self.test_object_group = pygame.sprite.Group()
@@ -100,7 +115,7 @@ class AstralPrivateer(Game):
         #                                self.test_object_group, self.cam_pan_group)
 
         self.map_group = pygame.sprite.Group()
-        self.map = Map(0, 0, 24, 24, 50, 50, TILE_SET, self.map_group, self.cam_pan_group)
+        self.map = Map(0, 0, 24, 24, 50, 50, self.TILE_SET, self.map_group, self.cam_pan_group)
 
 
     def draw_object_groups(self) -> None:
@@ -152,19 +167,13 @@ def main() -> None:
         "White": (255, 255, 255)
     }
 
-    #(Tile image path, Can be built over?)
-    #"Boundry": (os.path.join("assets", "tile_set", "boundry.png"), False),
-
-    #(colour, Can be built over?)
-    TILE_SET = {
-        "Boundry": ((40, 40, 40), False),
-        "Buildable": ((80, 80, 80), True)
-    }
+ 
 
     pygame.init()
 
-    game = AstralPrivateer("Astral Privateer", 800, 800,
-                            COLOURS, 60, TILE_SET)
+
+    game = AstralPrivateer("Astral Privateer", 1000, 800,
+                            COLOURS, 60)
 
     game.main_loop()
 
