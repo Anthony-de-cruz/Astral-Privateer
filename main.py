@@ -20,6 +20,7 @@ class TestObject(GameObject):
         self.image.fill((50,50,150))
         #self.image = pygame.transform.scale(self.image, ())
 
+
 class TileSetSheet(SpriteSheet):
 
     def __init__(self, sheet):
@@ -27,6 +28,7 @@ class TileSetSheet(SpriteSheet):
 
         self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
         self.buildable_sprite = self.get_sprite(0, 0, 50, 50, 1)
+
 
 class Map(pygame.sprite.Sprite):
 
@@ -110,12 +112,16 @@ class AstralPrivateer(Game):
         self.cam_speed = 10
         self.cam_pan_group = pygame.sprite.Group()
 
+        # Group for sprites for player to interact with via clicks
+        self.click_group = pygame.sprite.Group()
+
         #self.test_object_group = pygame.sprite.Group()
         #self.test_object = TestObject(50, 69, 100, 100,
         #                                self.test_object_group, self.cam_pan_group)
 
         self.map_group = pygame.sprite.Group()
-        self.map = Map(0, 0, 24, 24, 50, 50, self.TILE_SET, self.map_group, self.cam_pan_group)
+        self.map = Map(0, 0, 24, 24, 50, 50, self.TILE_SET,
+                        self.map_group, self.cam_pan_group, self.click_group)
 
 
     def draw_object_groups(self) -> None:
@@ -139,10 +145,24 @@ class AstralPrivateer(Game):
         """Method to handle player input"""
 
         keys = pygame.key.get_pressed()
+        if keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w] or keys[pygame.K_s]:
+            for sprite in self.cam_pan_group:
+                sprite.rect.x += (keys[pygame.K_a] - keys[pygame.K_d]) * self.cam_speed
+                sprite.rect.y += (keys[pygame.K_w] - keys[pygame.K_s]) * self.cam_speed
+        
+        for event in self.event_list:
 
-        for sprite in self.cam_pan_group:
-            sprite.rect.x += (keys[pygame.K_a] - keys[pygame.K_d]) * self.cam_speed
-            sprite.rect.y += (keys[pygame.K_w] - keys[pygame.K_s]) * self.cam_speed
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                
+                pos = pygame.mouse.get_pos()
+                clicked_sprites = [s for s in self.click_group
+                                    if s.rect.collidepoint(pos)]
+
+                for sprite in clicked_sprites:
+
+                    if type(sprite) == Map:
+                        print("map")
+
 
     def main_loop(self) -> None:
 

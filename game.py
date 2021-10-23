@@ -59,7 +59,8 @@ class Game():
 
         """Method to handle pygame events"""
 
-        for event in pygame.event.get():
+        self.event_list = pygame.event.get()
+        for event in self.event_list:
 
             if event.type == pygame.QUIT:
                 pygame.quit()
