@@ -76,7 +76,14 @@ class Map(pygame.sprite.Sprite):
                             (x * self.tile_width, y * self.tile_height,
                             self.tile_width, self.tile_height))
 
-        return image, rect 
+        return image, rect
+    
+    def click(self):
+
+        """Method for an action to be perfom when clicked"""
+
+        pass
+        
 
 
 class AstralPrivateer(Game):
@@ -157,12 +164,14 @@ class AstralPrivateer(Game):
                 pos = pygame.mouse.get_pos()
                 clicked_sprites = [s for s in self.click_group
                                     if s.rect.collidepoint(pos)]
+                print("clicked at", pos, "on", clicked_sprites)
+
 
                 for sprite in clicked_sprites:
+                    if isinstance(sprite, Map):
+                        sprite.click()
 
-                    if type(sprite) == Map:
-                        print("map")
-
+                
 
     def main_loop(self) -> None:
 
