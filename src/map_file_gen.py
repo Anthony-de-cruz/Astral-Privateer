@@ -1,4 +1,5 @@
 import json
+import random
 import os
 
 def generate_map(x_tiles: int, y_tiles: int) -> dict:
@@ -8,7 +9,7 @@ def generate_map(x_tiles: int, y_tiles: int) -> dict:
         for x in range(x_tiles):
 
             if y > 5:
-                grid[f"{x},{y}"] = ["Buildable", None]
+                grid[f"{x},{y}"] = [f"Buildable_{random.randint(0,1)}", None]
             else:
                 grid[f"{x},{y}"] = ["Boundary", None]
     return grid

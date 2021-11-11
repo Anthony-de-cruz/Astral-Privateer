@@ -9,8 +9,8 @@ class GameObject(pygame.sprite.Sprite):
 
     """Base game object that all objects will inherit from"""
 
-    def __init__(self, x_pos: int, y_pos:int, 
-                width:int, height:int, *groups:tuple):
+    def __init__(self, x_pos: int, y_pos: int, 
+                width: int, height: int, transparent: bool = True, *groups: tuple):
         super().__init__(*groups)
 
         self.x_pos = x_pos
@@ -18,7 +18,13 @@ class GameObject(pygame.sprite.Sprite):
 
         self.width = width
         self.height = height
-        self.image = pygame.Surface((self.width, self.height))
+
+        self.transparent = transparent
+        if not self.transparent:
+            self.image = pygame.Surface((self.width, self.height), pygame.SRCALPHA, 32)
+        else:
+            self.image = pygame.Surface((self.width, self.height))
+
         self.rect = pygame.Rect(self.x_pos, self.y_pos,
                                 self.width, self.height)
 

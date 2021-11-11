@@ -13,8 +13,8 @@ class TestObject(GameObject):
 
     """Class for test object"""
 
-    def __init__(self, x_pos:int, y_pos:int,
-                width:int, height:int, *groups:tuple):
+    def __init__(self, x_pos: int, y_pos: int,
+                width: int, height: int, *groups: tuple):
         super().__init__(x_pos, y_pos, width, height, *groups)
 
         self.image.fill((50,50,150))
@@ -23,11 +23,41 @@ class TestObject(GameObject):
 
 class TileSetSheet(SpriteSheet):
 
+    """Sprite sheet for the map tiles"""
+
     def __init__(self, sheet):
         super().__init__(sheet)
 
         self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
-        self.buildable_sprite = self.get_sprite(0, 0, 50, 50, 1)
+
+        self.buildable_sprite_1 = self.get_sprite(0, 50, 50, 50, 0)
+        self.buildable_sprite_2 = self.get_sprite(0, 50, 50, 50, 1)
+
+
+class MoneyCounterUI(GameObject):
+
+    """Class for the money counter object"""
+
+    def __init__(self, x_pos: int, y_pos: int,
+                width: int, height: int,
+                font: str, font_size: int, COLOUR_PALETTE: dict,
+                *groups: tuple):
+        super().__init__(x_pos, y_pos, width, height, False, *groups)
+
+        self.COLOUR_PALETTE = COLOUR_PALETTE
+        self.font = font
+        self.font_size = font_size
+        self.ui_font = pygame.font.SysFont(self.font, self.font_size)
+
+    def update(self):
+
+        ui_text = self.ui_font.render("42069", True, (self.COLOUR_PALETTE["White"]))
+
+        # This fill exists to wipe the image before reblitting every frame
+        # this allows for the image to refreshed
+        self.image.fill((0,0,0,0))
+        self.image.blit(ui_text, (0,0))
+
 
 
 class Map(pygame.sprite.Sprite):
@@ -36,8 +66,8 @@ class Map(pygame.sprite.Sprite):
 
     def __init__(self, x_pos: int, y_pos: int,
                 x_tiles: int, y_tiles: int,
-                tile_width:int, tile_height:int, TILE_SET: dict,
-                *groups:tuple):
+                tile_width: int, tile_height: int, TILE_SET: dict,
+                *groups: tuple):
         super().__init__(*groups)
 
         self.x_pos = x_pos
@@ -53,7 +83,7 @@ class Map(pygame.sprite.Sprite):
         self.height = self.y_tiles * tile_height
 
         self.map_data = load_map_file(os.path.join("levels", "level_0.json"))
-        print(self.map_data)
+        #//print(self.map_data)
 
         self.image, self.rect = self.render_map_image()
     
@@ -85,7 +115,6 @@ class Map(pygame.sprite.Sprite):
         pass
         
 
-
 class AstralPrivateer(Game):
 
     """Main game class"""
@@ -103,30 +132,42 @@ class AstralPrivateer(Game):
             window_height,
             COLOUR_PALETTE,
             frame_rate)
+
+        ## Create sprite groups
+        self.cam_speed = 10
+        self.cam_pan_group = pygame.sprite.Group()
         
+        self.ui_group = pygame.sprite.Group()
+
+        self.click_group = pygame.sprite.Group()
+
+        self.map_group = pygame.sprite.Group()
+
+        ## Load sprite sheets
+        # Load sprite sheet for the map
         tile_set_sheet = TileSetSheet(pygame.image.load(
                                     os.path.join("assets",
                                                 "tile_set",
                                                 "tile_set_0.png")
                                                         )
                                     )
+        
+        ## Create game objects
+        # Create tile set table
         # (Sprite, Able to build over?)
         self.TILE_SET = {
                         "Boundary": (tile_set_sheet.boundary_sprite, False),
-                        "Buildable": (tile_set_sheet.buildable_sprite, True)
+                        "Buildable_0": (tile_set_sheet.buildable_sprite_1, True),
+                        "Buildable_1": (tile_set_sheet.buildable_sprite_2, True)
                         }
+        
+        # Create UI element
+        self.money_counter_ui = MoneyCounterUI(5, 5,
+                                                100, 50,
+                                                "verdana", 36, self.COLOUR_PALETTE,
+                                                self.ui_group)
 
-        self.cam_speed = 10
-        self.cam_pan_group = pygame.sprite.Group()
-
-        # Group for sprites for player to interact with via clicks
-        self.click_group = pygame.sprite.Group()
-
-        #self.test_object_group = pygame.sprite.Group()
-        #self.test_object = TestObject(50, 69, 100, 100,
-        #                                self.test_object_group, self.cam_pan_group)
-
-        self.map_group = pygame.sprite.Group()
+        # Create map object
         self.map = Map(0, 0, 24, 24, 50, 50, self.TILE_SET,
                         self.map_group, self.cam_pan_group, self.click_group)
 
@@ -135,15 +176,17 @@ class AstralPrivateer(Game):
 
         """Method to draw all object groups"""
 
-        self.window.fill(self.COLOUR_PALETTE["Black"])
+        self.window.fill(self.COLOUR_PALETTE["Dark Grey"])
 
-        #self.test_object_group.draw(self.window)
         self.map_group.draw(self.window)
+        self.ui_group.draw(self.window)
 
 
     def update_object_groups(self) -> None:
 
         """Method to update all object groups"""
+
+        self.ui_group.update()
 
 
 
@@ -170,8 +213,7 @@ class AstralPrivateer(Game):
                 for sprite in clicked_sprites:
                     if isinstance(sprite, Map):
                         sprite.click()
-
-                
+      
 
     def main_loop(self) -> None:
 
@@ -193,15 +235,13 @@ def main() -> None:
 
     COLOURS = {
         "Black": (0, 0, 0),
-        "White": (255, 255, 255)
+        "White": (255, 255, 255),
+        "Dark Grey": (25, 25, 25)
     }
-
- 
 
     pygame.init()
 
-
-    game = AstralPrivateer("Astral Privateer", 1000, 800,
+    game = AstralPrivateer("Astral Privateer", 1600, 900,
                             COLOURS, 60)
 
     game.main_loop()
