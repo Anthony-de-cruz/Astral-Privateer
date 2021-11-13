@@ -1,6 +1,7 @@
 import random
 import sys
 import os
+import math
 from typing import NoReturn
 
 from game import GameObject, Game
@@ -49,15 +50,16 @@ class MoneyCounterUI(GameObject):
         self.font_size = font_size
         self.ui_font = pygame.font.SysFont(self.font, self.font_size)
 
+        self.money = str(0)
+
     def update(self):
 
-        ui_text = self.ui_font.render("42069", True, (self.COLOUR_PALETTE["White"]))
+        ui_text = self.ui_font.render(str(self.money), True, (self.COLOUR_PALETTE["White"]))
 
         # This fill exists to wipe the image before reblitting every frame
         # this allows for the image to refreshed
         self.image.fill((0,0,0,0))
         self.image.blit(ui_text, (0,0))
-
 
 
 class Map(pygame.sprite.Sprite):
@@ -107,13 +109,28 @@ class Map(pygame.sprite.Sprite):
                             self.tile_width, self.tile_height))
 
         return image, rect
-    
-    def click(self):
+
+
+    def click(self, clicked: tuple):
 
         """Method for an action to be perfom when clicked"""
 
-        pass
-        
+        # Converts clicked tuple into map coordinates
+        clicked_x = (clicked[0] - self.rect.x) // self.tile_width
+        clicked_y = (clicked[1] - self.rect.y) // self.tile_height
+
+        print(clicked_x, ",", clicked_y, self.map_data[f"{clicked_x},{clicked_y}"])
+
+        self.map_data[f"{clicked_x},{clicked_y}"] = (
+            ["Boundary", self.map_data[f"{clicked_x},{clicked_y}"][1]])
+    
+
+    def update(self):
+
+        """Method to execute when updating"""
+
+        self.image, _ = self.render_map_image()
+
 
 class AstralPrivateer(Game):
 
@@ -162,8 +179,8 @@ class AstralPrivateer(Game):
                         }
         
         # Create UI element
-        self.money_counter_ui = MoneyCounterUI(5, 5,
-                                                100, 50,
+        self.money_counter_ui = MoneyCounterUI(10, 10,
+                                                150, 50,
                                                 "verdana", 36, self.COLOUR_PALETTE,
                                                 self.ui_group)
 
@@ -186,6 +203,9 @@ class AstralPrivateer(Game):
 
         """Method to update all object groups"""
 
+        self.map_group.update()
+
+        self.money_counter_ui.money = str(int(self.money_counter_ui.money) + 1)
         self.ui_group.update()
 
 
@@ -212,7 +232,7 @@ class AstralPrivateer(Game):
 
                 for sprite in clicked_sprites:
                     if isinstance(sprite, Map):
-                        sprite.click()
+                        sprite.click(pos)
       
 
     def main_loop(self) -> None:
