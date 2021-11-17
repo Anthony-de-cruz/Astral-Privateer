@@ -1,64 +1,97 @@
-import random
-import sys
 import os
-from typing import NoReturn
+import json
+import random
 
-from game import GameObject, Game
-from load_map_file import load_map_file
+from game import Game, GameObject
 from sprite_sheet import SpriteSheet
 import pygame
 
 
-class TestObject(GameObject):
+def generate_map(x_tiles: int, y_tiles: int) -> dict:
 
-    """Class for test object"""
+    """Function to create a map data structure"""
 
-    def __init__(self, x_pos: int, y_pos: int,
-                width: int, height: int, *groups: tuple):
-        super().__init__(x_pos, y_pos, width, height, *groups)
+    grid = {}
+    for y in range(y_tiles):
+        for x in range(x_tiles):
 
-        self.image.fill((50,50,150))
-        #self.image = pygame.transform.scale(self.image, ())
-
-
-class TileSetSheet(SpriteSheet):
-
-    """Sprite sheet for the map tiles"""
-
-    def __init__(self, sheet):
-        super().__init__(sheet)
-
-        self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
-
-        self.buildable_sprite_1 = self.get_sprite(0, 50, 50, 50, 0)
-        self.buildable_sprite_2 = self.get_sprite(0, 50, 50, 50, 1)
+            grid[f"{x},{y}"] = [f"Buildable_{random.randint(0,1)}", None]
+    
+    return grid
 
 
-class MoneyCounterUI(GameObject):
+def save_map(map_data, name) -> None:
+    
+    """Function to create/save a map file"""
 
-    """Class for the money counter object"""
+    with open(os.path.join("levels", f"{name}"), "w") as map_file:
+        json.dump(map_data, map_file)
 
-    def __init__(self, x_pos: int, y_pos: int,
-                width: int, height: int,
-                font: str, font_size: int, COLOUR_PALETTE: dict,
-                *groups: tuple):
-        super().__init__(x_pos, y_pos, width, height, False, *groups)
 
-        self.COLOUR_PALETTE = COLOUR_PALETTE
-        self.font = font
-        self.font_size = font_size
-        self.ui_font = pygame.font.SysFont(self.font, self.font_size)
+def load_map_file(file_path: str) -> dict:
 
-        self.money = str(0)
+    """Function to load a map file"""
+    
+    with open(file_path, "r") as map_file:
+        map_data = json.load(map_file)
 
-    def update(self) -> None:
+    return map_data
 
-        ui_text = self.ui_font.render(str(self.money), True, (self.COLOUR_PALETTE["White"]))
 
-        # This fill exists to wipe the image before reblitting every frame
-        # this allows for the image to refreshed
-        self.image.fill((0,0,0,0))
-        self.image.blit(ui_text, (0,0))
+def generate_map_input():
+
+    """Function for the inputs to create a map file"""
+
+    while True:
+
+        x_tiles = int(input("x_tiles: "))
+        y_tiles = int(input("y_tiles: "))
+        name = input("name: ") + ".json"
+
+        try:
+            map_data = generate_map(x_tiles, y_tiles)
+            save_map(map_data, name)
+
+        except:
+            print("Something went wrong")
+
+        else:
+            print(f"{name} created successfully")
+            input()
+            break
+
+
+def edit_map_input():
+
+    """Function for the inputs to edit a map file"""
+
+    print("Map files:")
+    for thingy in os.listdir("levels"):
+        print(" ", thingy)
+
+    map_name = input("Name of map: ") + ".json"
+
+    COLOURS = {
+        "Black": (0, 0, 0),
+        "White": (255, 255, 255),
+        "Dark Grey": (25, 25, 25)
+    }
+
+    pygame.init()
+
+    game = AstralPrivateer("Astral Privateer", 1600, 900,
+                            COLOURS, 60, map_name)
+
+    map_data = game.main_loop()
+
+    save_choice = input("Do you want to save your map?(Y/N)")
+    if save_choice.capitalize() == "Y":
+        save_map(map_data, map_name)
+    else:
+        print("The map will not be saved")
+
+
+
 
 
 class Map(pygame.sprite.Sprite):
@@ -68,6 +101,7 @@ class Map(pygame.sprite.Sprite):
     def __init__(self, x_pos: int, y_pos: int,
                 x_tiles: int, y_tiles: int,
                 tile_width: int, tile_height: int, TILE_SET: dict,
+                name: str,
                 *groups: tuple):
         super().__init__(*groups)
 
@@ -82,8 +116,9 @@ class Map(pygame.sprite.Sprite):
 
         self.width = self.x_tiles * tile_width
         self.height = self.y_tiles * tile_height
+        print(self.width, self.height, "<--------------")
 
-        self.map_data = load_map_file(os.path.join("levels", "level_0.json"))
+        self.map_data = load_map_file(os.path.join("levels", f"{name}"))
         #//print(self.map_data)
 
         self.image, self.rect = self.render_map_image()
@@ -110,7 +145,7 @@ class Map(pygame.sprite.Sprite):
         return image, rect
 
 
-    def click(self, clicked: tuple):
+    def click(self, clicked: tuple, button: tuple):
 
         """Method for an action to be perfom when clicked"""
 
@@ -120,8 +155,15 @@ class Map(pygame.sprite.Sprite):
 
         print(clicked_x, ",", clicked_y, self.map_data[f"{clicked_x},{clicked_y}"])
 
-        self.map_data[f"{clicked_x},{clicked_y}"] = (
-            ["Boundary", self.map_data[f"{clicked_x},{clicked_y}"][1]])
+        # Left click
+        if button[0]:
+            self.map_data[f"{clicked_x},{clicked_y}"] = (
+                ["Boundary", self.map_data[f"{clicked_x},{clicked_y}"][1]])
+        
+        # Right Click
+        elif button[2]:
+            self.map_data[f"{clicked_x},{clicked_y}"] = (
+                [f"Buildable_{random.randint(0, 1)}", self.map_data[f"{clicked_x},{clicked_y}"][1]])
 
 
     def update(self) -> None:
@@ -129,6 +171,19 @@ class Map(pygame.sprite.Sprite):
         """Method to execute when updating"""
 
         self.image, _ = self.render_map_image()
+
+
+class TileSetSheet(SpriteSheet):
+
+    """Sprite sheet for the map tiles"""
+
+    def __init__(self, sheet):
+        super().__init__(sheet)
+
+        self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
+
+        self.buildable_sprite_1 = self.get_sprite(0, 50, 50, 50, 0)
+        self.buildable_sprite_2 = self.get_sprite(0, 50, 50, 50, 1)
 
 
 class AstralPrivateer(Game):
@@ -141,6 +196,7 @@ class AstralPrivateer(Game):
         window_height: int,
         COLOUR_PALETTE: dict,
         frame_rate: int,
+        map_name: str
         ):
         super().__init__(
             window_name,
@@ -176,15 +232,10 @@ class AstralPrivateer(Game):
                         "Buildable_0": (tile_set_sheet.buildable_sprite_1, True),
                         "Buildable_1": (tile_set_sheet.buildable_sprite_2, True)
                         }
-        
-        # Create UI element
-        self.money_counter_ui = MoneyCounterUI(10, 10,
-                                                150, 50,
-                                                "verdana", 36, self.COLOUR_PALETTE,
-                                                self.ui_group)
 
         # Create map object
-        self.map = Map(0, 0, 24, 24, 50, 50, self.TILE_SET,
+        self.map = Map(0, 0, 30, 30, 50, 50, self.TILE_SET,
+                        map_name,
                         self.map_group, self.cam_pan_group, self.click_group)
 
 
@@ -218,19 +269,33 @@ class AstralPrivateer(Game):
                 sprite.rect.y += (keys[pygame.K_w] - keys[pygame.K_s]) * self.cam_speed
         
         for event in self.event_list:
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                
+            
+            # pygame.mouse.get_pressed returns a tuple in the form
+            # (leftclick, middleclick, rightclick)
+            # Each is a boolean
+            if True in pygame.mouse.get_pressed():
+                    
                 pos = pygame.mouse.get_pos()
                 clicked_sprites = [s for s in self.click_group
-                                    if s.rect.collidepoint(pos)]
+                                        if s.rect.collidepoint(pos)]
                 print("clicked at", pos, "on", clicked_sprites)
-
 
                 for sprite in clicked_sprites:
                     if isinstance(sprite, Map):
-                        sprite.click(pos)
-      
+                        sprite.click(pos, pygame.mouse.get_pressed())
+    
+    # This serves the overwrite that which is given in game.py
+    # so that the script doesn't terminate once the game ends
+    def handle_events(self):
+
+        self.event_list = pygame.event.get()
+        for event in self.event_list:
+
+            if event.type == pygame.QUIT:
+                self.running = False
+                pygame.quit()
+                break
+
 
     def main_loop(self) -> None:
 
@@ -240,28 +305,49 @@ class AstralPrivateer(Game):
             
             self.clock.tick(self.frame_rate)
             self.handle_events()
+            if not self.running:
+                continue
             self.handle_inputs()
 
             self.update_object_groups()
 
             self.draw_object_groups()
             pygame.display.flip()
+        
+        return self.map.map_data
 
 
 def main() -> None:
+    
+    while True:
+        
+        print("""- Astral Privateer map editor -
+        
+        1: Create new map
+        2: Edit map
+        3: Exit
+        """)
 
-    COLOURS = {
-        "Black": (0, 0, 0),
-        "White": (255, 255, 255),
-        "Dark Grey": (25, 25, 25)
-    }
+        menu_input = input("Enter your choice: ")
 
-    pygame.init()
+        # Create new map
+        if menu_input == "1":
 
-    game = AstralPrivateer("Astral Privateer", 1600, 900,
-                            COLOURS, 60)
+            generate_map_input()
+            
+        # Edit map
+        elif menu_input == "2":
 
-    game.main_loop()
+            edit_map_input()
+        
+        # Exit
+        elif menu_input == "3":
+            quit()
+        
+        # Invalid input
+        else:
+            print("Invalid input")
+
 
 if __name__ == "__main__":
 
