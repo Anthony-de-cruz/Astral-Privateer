@@ -1,11 +1,12 @@
 import random
 import sys
 import os
-from typing import NoReturn
+import json
 
 from game import GameObject, Game
 from load_map_file import load_map_file
 from sprite_sheet import SpriteSheet
+from buildings import Building, SpaceElevator, load_buildings
 import pygame
 
 
@@ -19,19 +20,6 @@ class TestObject(GameObject):
 
         self.image.fill((50,50,150))
         #self.image = pygame.transform.scale(self.image, ())
-
-
-class TileSetSheet(SpriteSheet):
-
-    """Sprite sheet for the map tiles"""
-
-    def __init__(self, sheet):
-        super().__init__(sheet)
-
-        self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
-
-        self.buildable_sprite_1 = self.get_sprite(0, 50, 50, 50, 0)
-        self.buildable_sprite_2 = self.get_sprite(0, 50, 50, 50, 1)
 
 
 class MoneyCounterUI(GameObject):
@@ -61,33 +49,47 @@ class MoneyCounterUI(GameObject):
         self.image.blit(ui_text, (0,0))
 
 
+class TileSetSheet(SpriteSheet):
+
+    """Sprite sheet for the map tiles"""
+
+    def __init__(self, sheet):
+        super().__init__(sheet)
+
+        self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
+
+        self.buildable_sprite_1 = self.get_sprite(0, 50, 50, 50, 0)
+        self.buildable_sprite_2 = self.get_sprite(0, 50, 50, 50, 1)
+
+
 class Map(pygame.sprite.Sprite):
 
     """Class for the gridded map"""
 
     def __init__(self, x_pos: int, y_pos: int,
-                x_tiles: int, y_tiles: int,
                 tile_width: int, tile_height: int, TILE_SET: dict,
+                map_data: dict,
                 *groups: tuple):
         super().__init__(*groups)
 
         self.x_pos = x_pos
         self.y_pos = y_pos
-        self.x_tiles = x_tiles
-        self.y_tiles = y_tiles
 
         self.tile_width = tile_width
         self.tile_height = tile_height
         self.TILE_SET = TILE_SET
 
+        self.map_data = map_data
+
+        # Retrieve the dimentions of the map
+        self.x_tiles = self.map_data["Dimentions"][0]
+        self.y_tiles = self.map_data["Dimentions"][1]
+
         self.width = self.x_tiles * tile_width
         self.height = self.y_tiles * tile_height
 
-        self.map_data = load_map_file(os.path.join("levels", "level_0.json"))
-        #//print(self.map_data)
-
         self.image, self.rect = self.render_map_image()
-    
+
     # Currently requires the dimentions of the map to be hard coded,
     # needs a way to read the dimentions beforehand.
     def render_map_image(self) -> pygame.Surface and pygame.Rect:
@@ -110,7 +112,7 @@ class Map(pygame.sprite.Sprite):
         return image, rect
 
 
-    def click(self, clicked: tuple):
+    def click(self, clicked: tuple, button: tuple) -> None:
 
         """Method for an action to be perfom when clicked"""
 
@@ -120,8 +122,8 @@ class Map(pygame.sprite.Sprite):
 
         print(clicked_x, ",", clicked_y, self.map_data[f"{clicked_x},{clicked_y}"])
 
-        self.map_data[f"{clicked_x},{clicked_y}"] = (
-            ["Boundary", self.map_data[f"{clicked_x},{clicked_y}"][1]])
+        if button[0]:
+            print("Left clicked")
 
 
     def update(self) -> None:
@@ -133,7 +135,7 @@ class Map(pygame.sprite.Sprite):
 
 class AstralPrivateer(Game):
 
-    """Main game class"""
+    """Main game class, handles mainloop, inputs, updating and drawing"""
 
     def __init__(self,
         window_name: str,
@@ -167,7 +169,7 @@ class AstralPrivateer(Game):
                                                 "tile_set_0.png")
                                                         )
                                     )
-        
+
         ## Create game objects
         # Create tile set table
         # (Sprite, Able to build over?)
@@ -183,9 +185,16 @@ class AstralPrivateer(Game):
                                                 "verdana", 36, self.COLOUR_PALETTE,
                                                 self.ui_group)
 
+        # Load in map file
+        map_data = load_map_file(os.path.join("levels", "buildingtest.json"))
+
+        # Load in all prexisting buildings on the map file
+        map_data, self.buildings = load_buildings(map_data)
+
         # Create map object
-        self.map = Map(0, 0, 24, 24, 50, 50, self.TILE_SET,
-                        self.map_group, self.cam_pan_group, self.click_group)
+        self.map = Map(0, 0, 50, 50, self.TILE_SET, map_data,
+                                        self.map_group, self.cam_pan_group,
+                                        self.click_group)
 
 
     def draw_object_groups(self) -> None:
@@ -211,26 +220,25 @@ class AstralPrivateer(Game):
 
         """Method to handle player input"""
 
+        # Keyboard input
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a] or keys[pygame.K_d] or keys[pygame.K_w] or keys[pygame.K_s]:
             for sprite in self.cam_pan_group:
                 sprite.rect.x += (keys[pygame.K_a] - keys[pygame.K_d]) * self.cam_speed
                 sprite.rect.y += (keys[pygame.K_w] - keys[pygame.K_s]) * self.cam_speed
         
-        for event in self.event_list:
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
+        # Mouse input
+        if True in pygame.mouse.get_pressed():
                 
-                pos = pygame.mouse.get_pos()
-                clicked_sprites = [s for s in self.click_group
-                                    if s.rect.collidepoint(pos)]
-                print("clicked at", pos, "on", clicked_sprites)
+            pos = pygame.mouse.get_pos()
+            clicked_sprites = [s for s in self.click_group
+                                if s.rect.collidepoint(pos)]
+            print("Clicked at", pos, "on", clicked_sprites)
 
+            for sprite in clicked_sprites:
+                if isinstance(sprite, Map):
+                    sprite.click(pos, pygame.mouse.get_pressed())
 
-                for sprite in clicked_sprites:
-                    if isinstance(sprite, Map):
-                        sprite.click(pos)
-      
 
     def main_loop(self) -> None:
 

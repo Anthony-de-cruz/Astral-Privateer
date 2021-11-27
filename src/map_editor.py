@@ -4,18 +4,26 @@ import random
 
 from game import Game, GameObject
 from sprite_sheet import SpriteSheet
+from buildings import Building, load_buildings, SpaceElevator
 import pygame
+import jsonpickle
 
 
-def generate_map(x_tiles: int, y_tiles: int) -> dict:
+def generate_map(x_tiles: int, y_tiles: int, x_core: int, y_core: int) -> dict:
 
     """Function to create a map data structure"""
 
     grid = {}
+    grid["Dimentions"] = [x_tiles, y_tiles]
     for y in range(y_tiles):
         for x in range(x_tiles):
 
             grid[f"{x},{y}"] = [f"Buildable_{random.randint(0,1)}", None]
+    
+    # Create and pickle
+    core = SpaceElevator(x_core, y_core)
+    core_pickle = jsonpickle.encode(core)
+    grid[f"{core.x_coord},{core.y_coord}"][1] = core_pickle
     
     return grid
 
@@ -35,6 +43,7 @@ def load_map_file(file_path: str) -> dict:
     with open(file_path, "r") as map_file:
         map_data = json.load(map_file)
 
+
     return map_data
 
 
@@ -46,12 +55,15 @@ def generate_map_input():
 
         x_tiles = int(input("x_tiles: "))
         y_tiles = int(input("y_tiles: "))
+        x_core = int(input("x_core: "))
+        y_core = int(input("y_core: "))
         name = input("name: ") + ".json"
 
         try:
-            map_data = generate_map(x_tiles, y_tiles)
+            map_data = generate_map(x_tiles, y_tiles, x_core, y_core)
             save_map(map_data, name)
 
+        #todo Make this actually handle something
         except:
             print("Something went wrong")
 
@@ -91,15 +103,11 @@ def edit_map_input():
         print("The map will not be saved")
 
 
-
-
-
 class Map(pygame.sprite.Sprite):
 
     """Class for the gridded map"""
 
     def __init__(self, x_pos: int, y_pos: int,
-                x_tiles: int, y_tiles: int,
                 tile_width: int, tile_height: int, TILE_SET: dict,
                 name: str,
                 *groups: tuple):
@@ -107,19 +115,19 @@ class Map(pygame.sprite.Sprite):
 
         self.x_pos = x_pos
         self.y_pos = y_pos
-        self.x_tiles = x_tiles
-        self.y_tiles = y_tiles
 
         self.tile_width = tile_width
         self.tile_height = tile_height
         self.TILE_SET = TILE_SET
 
-        self.width = self.x_tiles * tile_width
-        self.height = self.y_tiles * tile_height
-        print(self.width, self.height, "<--------------")
-
         self.map_data = load_map_file(os.path.join("levels", f"{name}"))
         #//print(self.map_data)
+
+        self.x_tiles = self.map_data["Dimentions"][0]
+        self.y_tiles = self.map_data["Dimentions"][1]
+
+        self.width = self.x_tiles * tile_width
+        self.height = self.y_tiles * tile_height
 
         self.image, self.rect = self.render_map_image()
     
@@ -145,7 +153,7 @@ class Map(pygame.sprite.Sprite):
         return image, rect
 
 
-    def click(self, clicked: tuple, button: tuple):
+    def click(self, clicked: tuple, button: tuple) -> None:
 
         """Method for an action to be perfom when clicked"""
 
@@ -234,7 +242,7 @@ class AstralPrivateer(Game):
                         }
 
         # Create map object
-        self.map = Map(0, 0, 30, 30, 50, 50, self.TILE_SET,
+        self.map = Map(0, 0, 50, 50, self.TILE_SET,
                         map_name,
                         self.map_group, self.cam_pan_group, self.click_group)
 
