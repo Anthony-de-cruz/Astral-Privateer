@@ -30,12 +30,10 @@ def load_buildings(map_data: dict) -> Tuple[dict, pygame.sprite.Group]:
                 # Place the decoded building back into the map data
                 map_data[f"{x},{y}"][1] = building
 
-
     return map_data, buildings_group
 
 
 class Building(pygame.sprite.Sprite):
-
     def __init__(self, x: int, y: int, *groups: tuple):
         super().__init__(*groups)
         self.x_coord = x
@@ -43,7 +41,6 @@ class Building(pygame.sprite.Sprite):
 
 
 class SpaceElevator(Building):
-
     def __init__(self, x: int, y: int, *groups: tuple):
         super().__init__(x, y, *groups)
 
