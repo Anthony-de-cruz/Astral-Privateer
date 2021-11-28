@@ -2,6 +2,9 @@ import pygame
 
 
 class SpriteSheet:
+
+    """Spritesheet object to create sprites"""
+
     def __init__(self, sheet):
 
         self.sheet = sheet
@@ -16,6 +19,13 @@ class SpriteSheet:
         scale: float = 1,
     ) -> pygame.Surface:
 
+        """Extract sprite
+
+        Returns:
+            pygame.Surface: image containing the sprite
+        """
+
+        # Create image featuring texture
         image = pygame.Surface((width, height))
         image.blit(self.sheet, (0, 0), ((width * frame + x_pos), y_pos, width, height))
 
