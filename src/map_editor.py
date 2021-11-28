@@ -21,7 +21,7 @@ def generate_map(x_tiles: int, y_tiles: int, x_core: int, y_core: int) -> dict:
             grid[f"{x},{y}"] = [f"Buildable_{random.randint(0,1)}", None]
 
     # Create and pickle
-    core = SpaceElevator(x_core, y_core)
+    core = SpaceElevator(x_core, y_core, 50, 50)
     core_pickle = jsonpickle.encode(core)
     grid[f"{core.x_coord},{core.y_coord}"][1] = core_pickle
 
@@ -58,18 +58,18 @@ def generate_map_input():
         y_core = int(input("y_core: "))
         name = input("name: ") + ".json"
 
-        try:
-            map_data = generate_map(x_tiles, y_tiles, x_core, y_core)
-            save_map(map_data, name)
+        # try:
+        map_data = generate_map(x_tiles, y_tiles, x_core, y_core)
+        save_map(map_data, name)
 
         # todo Make this actually handle something
-        except:
-            print("Something went wrong")
+        # except Exception as excep:
+        #    print("Something went wrong:", excep)
 
-        else:
-            print(f"{name} created successfully")
-            input()
-            break
+        # else:
+        print(f"{name} created successfully")
+        input()
+        break
 
 
 def edit_map_input():

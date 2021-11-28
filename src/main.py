@@ -1,11 +1,10 @@
 import random
 import sys
 import os
-import json
 
 from game import GameObject, Game
 from load_map_file import load_map_file
-from sprite_sheet import SpriteSheet
+from sprite_sheet import TileSetSheet, BuildingSheet
 from buildings import Building, SpaceElevator, load_buildings
 import pygame
 
@@ -55,19 +54,6 @@ class MoneyCounterUI(GameObject):
         # this allows for the image to refreshed
         self.image.fill((0, 0, 0, 0))
         self.image.blit(ui_text, (0, 0))
-
-
-class TileSetSheet(SpriteSheet):
-
-    """Sprite sheet for the map tiles"""
-
-    def __init__(self, sheet):
-        super().__init__(sheet)
-
-        self.boundary_sprite = self.get_sprite(0, 0, 50, 50, 0)
-
-        self.buildable_sprite_1 = self.get_sprite(0, 50, 50, 50, 0)
-        self.buildable_sprite_2 = self.get_sprite(0, 50, 50, 50, 1)
 
 
 class Map(pygame.sprite.Sprite):
@@ -177,10 +163,17 @@ class AstralPrivateer(Game):
 
         self.map_group = pygame.sprite.Group()
 
+        self.buildings_group = pygame.sprite.Group()
+
         ## Load sprite sheets
         # Load sprite sheet for the map
         tile_set_sheet = TileSetSheet(
             pygame.image.load(os.path.join("assets", "tile_set", "tile_set_0.png"))
+        )
+
+        # Load sprite sheet for the buildings
+        buildings_sheet = BuildingSheet(
+            pygame.image.load(os.path.join("assets", "buildings", "buildings.png"))
         )
 
         ## Create game objects
@@ -198,10 +191,14 @@ class AstralPrivateer(Game):
         )
 
         # Load in map file
-        map_data = load_map_file(os.path.join("levels", "buildingtest.json"))
+        map_data = load_map_file(os.path.join("levels", "level_0.json"))
 
         # Load in all prexisting buildings on the map file
-        map_data, self.buildings = load_buildings(map_data)
+        map_data, groups = load_buildings(
+            map_data, buildings_sheet, self.buildings_group, self.cam_pan_group
+        )
+        self.buildings_group = groups[0]
+        self.cam_pan_group = groups[1]
 
         # Create map object
         self.map = Map(
@@ -223,6 +220,7 @@ class AstralPrivateer(Game):
         self.window.fill(self.COLOUR_PALETTE["Dark Grey"])
 
         self.map_group.draw(self.window)
+        self.buildings_group.draw(self.window)
         self.ui_group.draw(self.window)
 
     def update_object_groups(self) -> None:
@@ -230,7 +228,6 @@ class AstralPrivateer(Game):
         """Method to update all object groups"""
 
         self.map_group.update()
-
         self.ui_group.update()
 
     def handle_inputs(self) -> None:
