@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from game import GameObject
+from enemies import Enemy
 import pygame
 import jsonpickle
 
@@ -41,22 +42,22 @@ def load_buildings(
 
 class Building(pygame.sprite.Sprite):
     def __init__(
-        self, x_coord: int, y_coord: int, width: int, height: int, *groups: tuple
+        self, x_coord: int, y_coord: int, tile_width: int, tile_height: int, *groups: tuple
     ):
         super().__init__(*groups)
 
         self.x_coord = x_coord
         self.y_coord = y_coord
 
-        self.x_pos = self.x_coord * width
-        self.y_pos = self.y_coord * height
+        self.x_pos = self.x_coord * tile_width
+        self.y_pos = self.y_coord * tile_height
 
-        self.width = width
-        self.height = height
+        self.width = tile_width
+        self.height = tile_height
 
         self.create_rect()
 
-    def create_rect(self):
+    def create_rect(self) -> None:
         self.image = pygame.Surface((self.width, self.height))
         self.rect = pygame.Rect(self.x_pos, self.y_pos, self.width, self.height)
 
@@ -66,10 +67,37 @@ class Building(pygame.sprite.Sprite):
 
 class SpaceElevator(Building):
     def __init__(
-        self, x_coord: int, y_coord: int, width: int, height: int, *groups: tuple
+        self, x_coord: int, y_coord: int, tile_width: int, tile_height: int, *groups: tuple
     ):
-        super().__init__(x_coord, y_coord, width, height, *groups)
+        super().__init__(x_coord, y_coord, tile_width, tile_height, *groups)
 
-    def render(self, buildings_sheet):
+    def render(self, buildings_sheet) -> None:
 
         self.image.blit(buildings_sheet.space_elevator_sprite, (0, 0))
+
+
+class EnemySpawner(Building):
+    def __init__(
+        self, x_coord: int, y_coord: int, tile_width: int, tile_height: int, *groups: tuple
+    ):
+        super().__init__(x_coord, y_coord, tile_width, tile_height, *groups)
+
+        self.timer = 0
+        self.timer_difference = 0
+    
+    def render(self, buildings_sheet) -> None:
+
+        self.image.blit(buildings_sheet.enemy_spawner_sprite, (0, 0))
+
+    def update(self) -> None:
+
+        # Timer to go off every 1 second
+        self.timer = self.current_time - self.timer_difference
+        if self.timer > 1000:
+            #print("BRUH")
+            self.timer_difference = self.current_time
+            self.timer = 0
+
+    def spawn(self):
+
+        enemy = Enemy(self.x_coord, self.y_coord, 50, 50, )

@@ -5,8 +5,9 @@ import os
 from game import GameObject, Game
 from ui import MoneyCounterUI
 from load_map_file import load_map_file
-from sprite_sheet import TileSetSheet, BuildingSheet
+from sprite_sheet import TileSetSheet, BuildingSheet, EnemySheet
 from buildings import Building, SpaceElevator, load_buildings
+from enemies import Enemy
 import pygame
 
 
@@ -121,14 +122,13 @@ class AstralPrivateer(Game):
         ## Create sprite groups
         self.cam_speed = 10
         self.cam_pan_group = pygame.sprite.Group()
-
         self.ui_group = pygame.sprite.Group()
-
         self.click_group = pygame.sprite.Group()
-
         self.map_group = pygame.sprite.Group()
-
         self.buildings_group = pygame.sprite.Group()
+        self.spawner_group = pygame.sprite.Group()
+        self.enemies_group = pygame.sprite.Group()
+        self.time_group = pygame.sprite.Group()
 
         ## Load sprite sheets
         # Load sprite sheet for the map
@@ -140,6 +140,12 @@ class AstralPrivateer(Game):
         buildings_sheet = BuildingSheet(
             pygame.image.load(os.path.join("assets", "buildings", "buildings.png"))
         )
+
+         # Load sprite sheet for the enemies
+        enemy_sheet = EnemySheet(
+            pygame.image.load(os.path.join("assets", "enemies", "enemies.png"))
+        )
+
 
         ## Create game objects
         # Create tile set table
@@ -160,10 +166,12 @@ class AstralPrivateer(Game):
 
         # Load in all prexisting buildings on the map file
         map_data, groups = load_buildings(
-            map_data, buildings_sheet, self.buildings_group, self.cam_pan_group
+            map_data, buildings_sheet,
+            self.buildings_group, self.cam_pan_group, self.time_group
         )
         self.buildings_group = groups[0]
         self.cam_pan_group = groups[1]
+        self.time_group = groups[2]
 
         # Create map object
         self.map = Map(
@@ -178,6 +186,14 @@ class AstralPrivateer(Game):
             self.click_group,
         )
 
+        self.enemy_1 = Enemy(10, 5, 50, 50, enemy_sheet,self.enemies_group, self.cam_pan_group)
+        print(self.enemies_group)
+        #print(self.enemy_1.navigate(self.map.map_data))
+
+
+        # Record the time when the game starts
+        self.start_time = pygame.time.get_ticks()
+
     def draw_object_groups(self) -> None:
 
         """Method to draw all object groups"""
@@ -186,6 +202,7 @@ class AstralPrivateer(Game):
 
         self.map_group.draw(self.window)
         self.buildings_group.draw(self.window)
+        self.enemies_group.draw(self.window)
         self.ui_group.draw(self.window)
 
     def update_object_groups(self) -> None:
@@ -193,6 +210,8 @@ class AstralPrivateer(Game):
         """Method to update all object groups"""
 
         self.map_group.update()
+        self.buildings_group.update()
+        self.enemies_group.update()
         self.ui_group.update()
 
     def handle_inputs(self) -> None:
@@ -224,6 +243,11 @@ class AstralPrivateer(Game):
         while self.running:
 
             self.clock.tick(self.frame_rate)
+            self.current_time = pygame.time.get_ticks() - self.start_time
+            # Update each sprite in time_group
+            #todo need to find a more efficient way of doing this
+            for sprite in self.time_group: sprite.current_time = self.current_time
+
             self.handle_events()
             self.handle_inputs()
 

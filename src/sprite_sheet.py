@@ -53,3 +53,16 @@ class BuildingSheet(SpriteSheet):
         super().__init__(sheet)
 
         self.space_elevator_sprite = self.get_sprite(0, 0, 50, 50, 0)
+        self.enemy_spawner_sprite = self.get_sprite(0, 50, 50, 50, 0)
+
+
+class EnemySheet(SpriteSheet):
+
+    """Sprite sheet for the buildings"""
+
+    def __init__(self, sheet):
+        super().__init__(sheet)
+
+        self.enemy_1 = self.get_sprite(0, 0, 50, 50, 0).convert_alpha()
+
+

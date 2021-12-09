@@ -4,12 +4,12 @@ import random
 
 from game import Game, GameObject
 from sprite_sheet import SpriteSheet
-from buildings import Building, load_buildings, SpaceElevator
+from buildings import Building, load_buildings, SpaceElevator, EnemySpawner
 import pygame
 import jsonpickle
 
 
-def generate_map(x_tiles: int, y_tiles: int, x_core: int, y_core: int) -> dict:
+def generate_map(x_tiles: int, y_tiles: int, x_core: int, y_core: int, x_spawner: int, y_spawner: int) -> dict:
 
     """Function to create a map data structure"""
 
@@ -23,7 +23,13 @@ def generate_map(x_tiles: int, y_tiles: int, x_core: int, y_core: int) -> dict:
     # Create and pickle
     core = SpaceElevator(x_core, y_core, 50, 50)
     core_pickle = jsonpickle.encode(core)
+    
+
     grid[f"{core.x_coord},{core.y_coord}"][1] = core_pickle
+
+    spawner = EnemySpawner(x_spawner, y_spawner, 50, 50)
+    spawner_pickle = jsonpickle.encode(spawner)
+    grid[f"{spawner.x_coord},{spawner.y_coord}"][1] = spawner_pickle
 
     return grid
 
@@ -52,24 +58,27 @@ def generate_map_input():
 
     while True:
 
-        x_tiles = int(input("x_tiles: "))
-        y_tiles = int(input("y_tiles: "))
-        x_core = int(input("x_core: "))
-        y_core = int(input("y_core: "))
-        name = input("name: ") + ".json"
+        try:
+            x_tiles, y_tiles = int(input("x_tiles: ")), int(input("y_tiles: "))
+            x_core, y_core = int(input("x_core: ")), int(input("y_core: "))
+            x_spawner, y_spawner = int(input("x_spawner: ")), int(input("y_spawner: "))
+            name = input("name: ") + ".json"
 
-        # try:
-        map_data = generate_map(x_tiles, y_tiles, x_core, y_core)
-        save_map(map_data, name)
+        except ValueError as excep:
+            print("Invalid input")
 
-        # todo Make this actually handle something
-        # except Exception as excep:
-        #    print("Something went wrong:", excep)
+        try:
+            map_data = generate_map(x_tiles, y_tiles, x_core, y_core, x_spawner, y_spawner)
+            save_map(map_data, name)
 
-        # else:
-        print(f"{name} created successfully")
-        input()
-        break
+
+        except Exception as excep:
+            print("Something went wrong:", excep)
+
+        else:
+            print(f"{name} created successfully")
+            input()
+            break
 
 
 def edit_map_input():
